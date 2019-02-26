@@ -11,7 +11,7 @@ def norm(x):
         nrm += pow(x[i], 2)
     nrm = sqrt(nrm)
     return nrm
-"
+
 def partial_derivative(func, var=0, point=[]):
     args = point[:]
     def wraps(x):
