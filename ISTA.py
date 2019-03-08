@@ -3,6 +3,8 @@ import matplotlib.pyplot as plt
 import numpy as np
 import math
 from pylab import *
+import sys 
+from termcolor import colored, cprint 
 
 
 def norm(x):
@@ -29,7 +31,7 @@ def sgn(a):
         return 0
     return signe
 
-def shrinkage_operator(x, i, alpha):
+def shrinkage_operator(x, alpha):
     for i in range(len(x)):
         x[i] = abs((abs(x[i]) - alpha)) * sgn(x[i])
     return x
@@ -44,39 +46,54 @@ def Ista(beta, alpha, x_0, y, lbd, iter, eps):
     n = len(x_0)
     x_i = ones(n) 
     z_i = ones(n)
-    x_i = np.copy(x_0)
+    x_i = ones(n)
 
     def _g(x_0, y,lbd):
         diff = 0
-        for i in range(1,len(x_0)):
-            diff += x[r] - [r-1]
+        for r in range(1,len(x_0)):
+            diff += x_0[r] - x_0[r-1]
         return np.sum((x_0-y)*(x_0-y)) + lbd * diff
 
     for i in range(iter):
         z_i = np.copy(x_i + beta * gradient(x_i, y, lbd))
-        x_i = shrinkage_operator(z_i, i, alpha)
+        x_i = shrinkage_operator(z_i, alpha)
         print("norme(x_",i,") =", norm(x_i))
-        if norm(x_i)**2 < eps:
-            print("le nombre d'itérations est : ",iter)
+        print("g(x_",i,") =", _g(x_i, y, lbd))
+        if norm(x_i-x_0)**2 < eps:
+            print("le nombre d'itérations est : ", i)
             return True
+    if i == iter-1:
+        cprint("Erreur, le nombre d'itérations est dépassé sans convergence", 'red', attrs=['bold'], file=sys.stderr)
     return False
 
+# def Fista(beta, alpha, x_0, y, lbd, iter, eps):
+#     n = len(x_0)
+#     x_i = ones(n)
+#     x_copy = ones(n)
+#     z_i = np.copy(x_0)
+#     x_i = np.copy(x_0)
+
+#     for i in range(iter):
+#         x_i = 
 
 
 
-x_0 = np.array([-3, -1, 0, 4, 6, 8])
-y = np.array([0, 0, 0, 12, 18, 24])
-beta = 0.01
-alpha = 0.01
+
+
+
+x_0 = np.random.rand(10)  
+y = np.random.rand(10) 
+beta = -0.0001
+alpha = 0.001
 lbd = 0.01
-iter = 1000000
-eps = 0.001
+iter = 500000
+eps = 1
 
-
+print("y before calling ISTA = ", y)
 
 print(Ista(beta, alpha, x_0, y, lbd, iter, eps))
 
-print("x = ", x_0, "\ny= ", y)
+print("x = ", x_0, "\ny = ", y, "\nerreur = ", sqrt(norm((y-x_0)**2)))
 
 
 
