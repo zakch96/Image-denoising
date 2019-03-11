@@ -3,8 +3,9 @@ import matplotlib.pyplot as plt
 import numpy as np
 import math
 from pylab import *
-import sys 
-from termcolor import colored, cprint 
+from scipy import signal
+from termcolor import colored, cprint
+import time 
 
 
 def norm(x):
@@ -32,8 +33,9 @@ def sgn(a):
     return signe
 
 def shrinkage_operator(x, alpha):
+    l = np.copy(x)
     for i in range(len(x)):
-        x[i] = abs((abs(x[i]) - alpha)) * sgn(x[i])
+        l[i] = abs((abs(x[i]) - alpha)) * sgn(x[i])
     return x
 
 def gradient(x, y, lbd):
@@ -44,10 +46,10 @@ def gradient(x, y, lbd):
 
 def Ista(beta, alpha, x_0, y, lbd, iter, eps):
     n = len(x_0)
-    x_i = ones(n) 
-    z_i = ones(n)
-    x_i = ones(n)
+    z_i = zeros(n)
+    x_i = zeros(n)
 
+    print("Avant ISTA y = ", y)
     def _g(x_0, y,lbd):
         diff = 0
         for r in range(1,len(x_0)):
@@ -57,43 +59,79 @@ def Ista(beta, alpha, x_0, y, lbd, iter, eps):
     for i in range(iter):
         z_i = np.copy(x_i + beta * gradient(x_i, y, lbd))
         x_i = shrinkage_operator(z_i, alpha)
-        print("norme(x_",i,") =", norm(x_i))
-        print("g(x_",i,") =", _g(x_i, y, lbd))
-        if norm(x_i-x_0)**2 < eps:
+        #print("g(x_",i,") =", _g(x_i, y, lbd))
+        if _g(x_0, y,lbd)**2 < eps:
             print("le nombre d'itérations est : ", i)
+            print("après ISTA x_i =",x_i,"\nl'erreur = ", sqrt((norm(x_i-x_0)))/n)
             return True
     if i == iter-1:
-        cprint("Erreur, le nombre d'itérations est dépassé sans convergence", 'red', attrs=['bold'], file=sys.stderr)
+    	print("le nombre d'itérations est : ", i)
+    	print("après ISTA x_i =",x_i,"\nl'erreur = ", sqrt((norm(x_i-x_0)))/n)
+    	cprint("Erreur, le nombre d'itérations est dépassé sans convergence", 'white', attrs=['bold'], file=sys.stderr)
+    print("norme(x_",i,"-x_0)^2 =", norm(x_i-x_0))
     return False
 
-# def Fista(beta, alpha, x_0, y, lbd, iter, eps):
-#     n = len(x_0)
-#     x_i = ones(n)
-#     x_copy = ones(n)
-#     z_i = np.copy(x_0)
-#     x_i = np.copy(x_0)
+def Fista(beta, alpha, x_0, b, lbd, lf, iter, eps):
+	i = 0
+	n = len(x_0)
+	x_i = zeros(n)
+	x_i_prev = zeros(n)
+	y_i = zeros(n)
+	t_i = 1.
+	t_i_prev = 1.
+	for i in range(iter):
+		#x_i = shrinkage_operator(z_i, alpha)
+		x_i = np.copy((1./(lf+lbd**2)) * (lf * y_i -(y_i - b)))
+		t_i = (1 + sqrt(1 + 4 * t_i_prev**2 )) / 2.
+		tmp = (t_i_prev - 1)/t_i
+		y_i = x_i + tmp * (x_i - x_i_prev)
+		if norm(x_i-x_0)**2 < eps:
+			print("après ISTA x_i =",x_i,"\nl'erreur = ", norm(x_i-x_0)**2)
+			print("le nombre d'itérations est : ", i)
+			return True
+		x_i_prev = np.copy(x_i)
+		t_i_prev = t_i
+	if i == iter-1:
+		print("après FISTA x_i =",x_i,"\nl'erreur = ", norm(x_i-x_0)**2)
+		cprint("Erreur, le nombre d'itérations est dépassé sans convergence", 'red', attrs=['bold'], file=sys.stderr)
+	return False
 
-#     for i in range(iter):
-#         x_i = 
+def fista(A, b, l, maxit):
+    x = np.zeros(A.shape[1])
+    pobj = []
+    t = 1
+    z = x.copy()
+    L = linalg.norm(A) ** 2
+    time0 = time.time()
+    for i in range(maxit):
+        xold = x.copy()
+        z = z + A.T.dot(b - A.dot(z)) / L
+        x = shrinkage_operator(z, l / L)
+        t0 = t
+        t = (1. + sqrt(1. + 4. * t ** 2)) / 2.
+        z = x + ((t0 - 1.) / t) * (x - xold)
+        this_pobj = 0.5 * linalg.norm(A.dot(x) - b) ** 2 + l * linalg.norm(x, 1)
+        pobj.append((time.time() - time0, this_pobj))
+
+    times, pobj = map(np.array, zip(*pobj))
+    return x
 
 
 
 
-
-
-x_0 = np.random.rand(10)  
-y = np.random.rand(10) 
-beta = -0.0001
-alpha = 0.001
-lbd = 0.01
-iter = 500000
-eps = 1
+A = np.eye(10)
+x_0 = zeros(10) 
+y = np.copy(x_0 + np.random.normal(loc=0.0, scale=0.2, size=10) )
+y[5] = 1.
+beta = -0.00001
+alpha = 0.1
+lbd = 0.1
+lf = 1.5
+iter = 10000
+eps = 0.001
 
 print("y before calling ISTA = ", y)
-
 print(Ista(beta, alpha, x_0, y, lbd, iter, eps))
-
-print("x = ", x_0, "\ny = ", y, "\nerreur = ", sqrt(norm((y-x_0)**2)))
-
-
+print(Fista(beta, alpha, x_0, y, lbd, lf, iter, eps))
+print(fista(A, y, 2, 100))
 
