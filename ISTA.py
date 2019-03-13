@@ -6,9 +6,13 @@ from pylab import *
 from scipy import signal
 from termcolor import colored, cprint
 import time 
+import matplotlib.pyplot as plt
 
 
-def norm(x):
+def norm_1(x):
+	return np.sum.abs(x)
+
+def norm_2(x):
     nrm =0
     for i in range(len(x)):
         nrm += pow(x[i], 2)
@@ -33,9 +37,9 @@ def sgn(a):
     return signe
 
 def shrinkage_operator(x, alpha):
-    l = np.copy(x)
+    #l = np.copy(x)
     for i in range(len(x)):
-        l[i] = abs((abs(x[i]) - alpha)) * sgn(x[i])
+        x[i] = abs((abs(x[i]) - alpha)) * sgn(x[i])
     return x
 
 def gradient(x, y, lbd):
@@ -44,7 +48,7 @@ def gradient(x, y, lbd):
         grad[r] = 2*(x[r] - y[r]) + lbd*sgn(x[r])
     return grad
 
-def Ista(beta, alpha, x_0, y, lbd, iter, eps):
+def Ista(beta, alpha, x_0, y, lbd, iter, eps, norm):
     n = len(x_0)
     z_i = zeros(n)
     x_i = zeros(n)
@@ -63,38 +67,52 @@ def Ista(beta, alpha, x_0, y, lbd, iter, eps):
         if _g(x_0, y,lbd)**2 < eps:
             print("le nombre d'itérations est : ", i)
             print("après ISTA x_i =",x_i,"\nl'erreur = ", sqrt((norm(x_i-x_0)))/n)
-            return True
-    if i == iter-1:
-    	print("le nombre d'itérations est : ", i)
-    	print("après ISTA x_i =",x_i,"\nl'erreur = ", sqrt((norm(x_i-x_0)))/n)
-    	cprint("Erreur, le nombre d'itérations est dépassé sans convergence", 'white', attrs=['bold'], file=sys.stderr)
-    print("norme(x_",i,"-x_0)^2 =", norm(x_i-x_0))
-    return False
+            return x_i
+        if i == iter-1:
+        	print("le nombre d'itérations est : ", i)
+        	print("après ISTA x_i =",x_i,"\nl'erreur = ", sqrt((norm(x_i-x_0)))/n)
+        	#cprint("Erreur, le nombre d'itérations est dépassé sans convergence", 'white', attrs=['bold'], file=sys.stderr)
+        #print("ITERATION ", i, 'norme(x_', i,'-x_0)**2 = ', norm(x_i-x_0)**2)
 
-def Fista(beta, alpha, x_0, b, lbd, lf, iter, eps):
-	i = 0
+    print("le nombre d'itérations est i = ", i)
+    print("norme(x_",i,"-x_0)^2 =", norm(x_i-x_0))
+    x_0 = x_i
+    return x_i
+
+def Fista(beta, alpha, x_0, b, lbd, lf, iter, eps, norm):
+	k = 0
 	n = len(x_0)
-	x_i = zeros(n)
-	x_i_prev = zeros(n)
-	y_i = zeros(n)
+	x_i = ones(n)
+	x_i_prev = ones(n)/2.
+	y_i = ones(n)/2.
 	t_i = 1.
 	t_i_prev = 1.
+
 	for i in range(iter):
 		#x_i = shrinkage_operator(z_i, alpha)
-		x_i = np.copy((1./(lf+lbd**2)) * (lf * y_i -(y_i - b)))
+		y_i = (1./(lf+lbd**2)) * (lf * y_i -(y_i - b))
+		x_i = shrinkage_operator(b, alpha)
 		t_i = (1 + sqrt(1 + 4 * t_i_prev**2 )) / 2.
 		tmp = (t_i_prev - 1)/t_i
 		y_i = x_i + tmp * (x_i - x_i_prev)
 		if norm(x_i-x_0)**2 < eps:
 			print("après ISTA x_i =",x_i,"\nl'erreur = ", norm(x_i-x_0)**2)
-			print("le nombre d'itérations est : ", i)
-			return True
+			return x_i
 		x_i_prev = np.copy(x_i)
 		t_i_prev = t_i
-	if i == iter-1:
-		print("après FISTA x_i =",x_i,"\nl'erreur = ", norm(x_i-x_0)**2)
-		cprint("Erreur, le nombre d'itérations est dépassé sans convergence", 'red', attrs=['bold'], file=sys.stderr)
-	return False
+		if i == iter-1:
+			print("le nombre d'itérations est : ", i)
+			print("après FISTA x_i =",x_i,"\nl'erreur = ", norm(x_i-x_0)**2)
+		    #cprint("Erreur, le nombre d'itérations est dépassé sans convergence", 'red', attrs=['bold'], file=sys.stderr)
+		#print("ITERATION ", i, 'norme(x_', i,'-x_0)**2 = ', norm(x_i-x_0)**2)
+		k=i
+
+	print("le nombre d'itérations est : ", k)
+	print("norme(x_",i,"-x_0)^2 =", norm(x_i-x_0))
+	return x_i
+
+def soft_thresh(x, l):
+	return np.sign(x) * np.maximum(np.abs(x) - l, 0.)
 
 def fista(A, b, l, maxit):
     x = np.zeros(A.shape[1])
@@ -106,7 +124,7 @@ def fista(A, b, l, maxit):
     for i in range(maxit):
         xold = x.copy()
         z = z + A.T.dot(b - A.dot(z)) / L
-        x = shrinkage_operator(z, l / L)
+        x = soft_thresh(z, l / L)
         t0 = t
         t = (1. + sqrt(1. + 4. * t ** 2)) / 2.
         z = x + ((t0 - 1.) / t) * (x - xold)
@@ -120,18 +138,46 @@ def fista(A, b, l, maxit):
 
 
 A = np.eye(10)
+# for i in range(9):
+# 	A[i][i+1]= 1
 x_0 = zeros(10) 
-y = np.copy(x_0 + np.random.normal(loc=0.0, scale=0.2, size=10) )
-y[5] = 1.
-beta = -0.00001
-alpha = 0.1
-lbd = 0.1
+b = np.random.normal(loc=0.0, scale=0.5, size=10)
+#b = 
+beta = -0.000001
+alpha = 0.0001
+lbd = 1
 lf = 1.5
-iter = 10000
-eps = 0.001
+iter1 = 30000
+iter2 = 30000
+eps = 0.0000001
 
-print("y before calling ISTA = ", y)
-print(Ista(beta, alpha, x_0, y, lbd, iter, eps))
-print(Fista(beta, alpha, x_0, y, lbd, lf, iter, eps))
-print(fista(A, y, 2, 100))
+print('==========Ista RESULTS==========')
+print("__________'NORM_1'__________")
+print("b before calling ISTA = ", b)
+print(Ista(beta, alpha, x_0, b, lbd, iter1, eps, norm_2))
+print("\n")
+
+print("__________'NORM_2'__________")
+print("b before calling ISTA = ", b)
+print(Ista(beta, alpha, x_0, b, lbd, iter1, eps, norm_2))
+print("\n")
+
+print('==========Fista RESULTS==========')
+print("__________'NORM_1'__________")
+print(Fista(beta, alpha, x_0, b, lbd, lf, iter2, eps, norm_2))
+print("\n")
+
+print("___________NORM_2'__________")
+print(Fista(beta, alpha, x_0, b, lbd, lf, iter2, eps, norm_2))
+print("\n")
+
+#print("__________'FISTA RESULTS BIS'__________")
+#print(fista(A, b, 1, 10))
+print("\n")
+
+x_ista = Ista(beta, alpha, x_0, b, lbd, iter1, eps, norm_2)[0]
+arr_1 = np.linspace(-1, 1, 10)
+y_ista = Ista(beta, alpha, x_0, b, lbd, iter1, eps, norm_2)[1]
+plt.legend(['x_ista','y_ista'])
+plt.show()
 
