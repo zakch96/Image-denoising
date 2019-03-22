@@ -42,6 +42,12 @@ def shrinkage_operator(x, alpha):
         x[i] = abs((abs(x[i]) - alpha)) * sgn(x[i])
     return x
 
+def shrinkage_operator_bis(x, alpha):
+    #l = np.copy(x)
+    for i in range(len(x)):
+    	x[i] = abs((abs(x[i]) - alpha)) * sgn(x[i])
+    return x
+
 def gradient(x, y, lbd):
     grad = np.ones(len(x))
     for r in range(len(x)):
@@ -52,6 +58,7 @@ def Ista(beta, alpha, x_0, y, lbd, iter, eps, norm):
     n = len(x_0)
     z_i = zeros(n)
     x_i = zeros(n)
+    i = 0
 
     print("Avant ISTA y = ", y)
     def _g(x_0, y,lbd):
@@ -64,7 +71,7 @@ def Ista(beta, alpha, x_0, y, lbd, iter, eps, norm):
         z_i = np.copy(x_i + beta * gradient(x_i, y, lbd))
         x_i = shrinkage_operator(z_i, alpha)
         #print("g(x_",i,") =", _g(x_i, y, lbd))
-        if _g(x_0, y,lbd)**2 < eps:
+        if  norm(x_i-x_0)**2  < eps:
             print("le nombre d'itérations est : ", i)
             print("après ISTA x_i =",x_i,"\nl'erreur = ", sqrt((norm(x_i-x_0)))/n)
             return x_i
@@ -140,16 +147,16 @@ def fista(A, b, l, maxit):
 A = np.eye(10)
 # for i in range(9):
 # 	A[i][i+1]= 1
-x_0 = zeros(10) 
-b = np.random.normal(loc=0.0, scale=0.5, size=10)
+x_0 = ones(10) 
+b = np.random.normal(loc=3.0, scale=0.5, size=10) + ones(10)
 #b = 
 beta = -0.000001
 alpha = 0.0001
 lbd = 1
-lf = 1.5
+lf = 2.5
 iter1 = 30000
 iter2 = 30000
-eps = 0.0000001
+eps = 0.000001
 
 print('==========Ista RESULTS==========')
 print("__________'NORM_1'__________")
@@ -175,9 +182,9 @@ print("\n")
 #print(fista(A, b, 1, 10))
 print("\n")
 
-x_ista = Ista(beta, alpha, x_0, b, lbd, iter1, eps, norm_2)[0]
-arr_1 = np.linspace(-1, 1, 10)
-y_ista = Ista(beta, alpha, x_0, b, lbd, iter1, eps, norm_2)[1]
-plt.legend(['x_ista','y_ista'])
-plt.show()
+# x_ista = Ista(beta, alpha, x_0, b, lbd, iter1, eps, norm_2)[0]
+# arr_1 = np.linspace(-1, 1, 10)
+# y_ista = Ista(beta, alpha, x_0, b, lbd, iter1, eps, norm_2)[1]
+# plt.legend(['x_ista','y_ista'])
+# plt.show()
 
