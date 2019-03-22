@@ -1,12 +1,11 @@
-from scipy import misc
-import matplotlib.pyplot as plt
 import numpy as np
+import matplotlib.pyplot as plt
 import math
 from pylab import *
-from scipy import signal
-from termcolor import colored, cprint
 import time 
 import matplotlib.pyplot as plt
+
+
 
 
 def norm_1(x):
@@ -158,6 +157,7 @@ iter1 = 30000
 iter2 = 30000
 eps = 0.000001
 
+
 print('==========Ista RESULTS==========')
 print("__________'NORM_1'__________")
 print("b before calling ISTA = ", b)
@@ -178,13 +178,22 @@ print("___________NORM_2'__________")
 print(Fista(beta, alpha, x_0, b, lbd, lf, iter2, eps, norm_2))
 print("\n")
 
-#print("__________'FISTA RESULTS BIS'__________")
-#print(fista(A, b, 1, 10))
+print("__________'FISTA RESULTS BIS'__________")
+print(fista(A, b, 1, 10))
 print("\n")
 
+<<<<<<< HEAD
 # x_ista = Ista(beta, alpha, x_0, b, lbd, iter1, eps, norm_2)[0]
 # arr_1 = np.linspace(-1, 1, 10)
 # y_ista = Ista(beta, alpha, x_0, b, lbd, iter1, eps, norm_2)[1]
 # plt.legend(['x_ista','y_ista'])
 # plt.show()
+=======
+fista_bis = fista(A, b, 1, 10)
 
+from pylab import *
+>>>>>>> 3d33902b0013718429de168f489b17402e64289d
+
+plot(b)
+plot(fista_bis)
+show()
