@@ -7,16 +7,18 @@ import matplotlib.pyplot as plt
 
 
 
-
+#returns norm_1 of an array x
 def norm_1(x):
 	return np.sum.abs(x)
 
+#returns norm_2 of an array x
 def norm_2(x):
     nrm =0
     for i in range(len(x)):
         nrm += pow(x[i], 2)
     return sqrt(nrm)
 
+#returns the partial derivative of a function func in IR^n
 def partial_derivative(func, var=0, point=[]):
     args = point[:]
     def wraps(x):
@@ -35,17 +37,13 @@ def sgn(a):
         return 0
     return signe
 
+
 def shrinkage_operator(x, alpha):
     #l = np.copy(x)
     for i in range(len(x)):
         x[i] = abs((abs(x[i]) - alpha)) * sgn(x[i])
     return x
 
-def shrinkage_operator_bis(x, alpha):
-    #l = np.copy(x)
-    for i in range(len(x)):
-    	x[i] = abs((abs(x[i]) - alpha)) * sgn(x[i])
-    return x
 
 def gradient(x, y, lbd):
     grad = np.ones(len(x))
@@ -53,6 +51,14 @@ def gradient(x, y, lbd):
         grad[r] = 2*(x[r] - y[r]) + lbd*sgn(x[r])
     return grad
 
+#Ista algorithm: returns the denoised signal
+#beta: a suitable gradient step ( < 0)
+#alpha = shrinkage operator parameter
+#x_0: IR^n vector (n = len(x))
+#y: is the signal plus the perturbation 
+#lbd: regularization parameter > 0 provides a tradeoff between fidelity to the measurements and noise sensitivity.
+#iter: number of iterations
+#eps: precision
 def Ista(beta, alpha, x_0, y, lbd, iter, eps, norm):
     n = len(x_0)
     z_i = zeros(n)
@@ -85,6 +91,15 @@ def Ista(beta, alpha, x_0, y, lbd, iter, eps, norm):
     x_0 = x_i
     return x_i
 
+#Ista algorithm: returns the denoised signal
+#beta: a suitable gradient step ( < 0)
+#alpha = shrinkage operator parameter
+#x_0: IR^n vector (n = len(x))
+#b: is the signal plus the perturbation 
+#lbd: regularization parameter > 0 provides a tradeoff between fidelity to the measurements and noise sensitivity.
+#lf: Lipschitz constant, must be <= than (A*transpose(A). In this case A is the identity matrix
+#iter: number of iterations
+#eps: precision
 def Fista(beta, alpha, x_0, b, lbd, lf, iter, eps, norm):
 	k = 0
 	n = len(x_0)
@@ -93,6 +108,8 @@ def Fista(beta, alpha, x_0, b, lbd, lf, iter, eps, norm):
 	y_i = ones(n)/2.
 	t_i = 1.
 	t_i_prev = 1.
+
+	print("Avant ISTA y = ", b)
 
 	for i in range(iter):
 		#x_i = shrinkage_operator(z_i, alpha)
@@ -142,35 +159,51 @@ def fista(A, b, l, maxit):
 
 
 
+#Parameters Initialization
 
 A = np.eye(10)
 # for i in range(9):
 # 	A[i][i+1]= 1
-x_0 = ones(10) 
-b = np.random.normal(loc=3.0, scale=0.5, size=10) + ones(10)
+x_0 = zeros(10)
+for i in range(5,10):
+	x_0[i] = 1
+b = np.random.normal(loc=0.0, scale=0.01, size=10) + x_0
 #b = 
 beta = -0.000001
-alpha = 0.0001
-lbd = 1
-lf = 2.5
-iter1 = 30000
-iter2 = 30000
-eps = 0.000001
+alpha = 1.
+lbd = 1.5
+lf = 2
+iter1 = 50000
+iter2 = 50000
+eps = 0.0001
 
+T = np.array([-1 + 2/10*i for i in range(10)])
 
-print('==========Ista RESULTS==========')
-print("__________'NORM_1'__________")
-print("b before calling ISTA = ", b)
-print(Ista(beta, alpha, x_0, b, lbd, iter1, eps, norm_2))
-print("\n")
+#Testing ISTA algorithm with both norm 1 and norm 2 
+# print('==========Ista RESULTS==========')
+# print("__________'NORM_1'__________")
+# print("b before calling ISTA = ", b)
+# print(Ista(beta, alpha, x_0, b, lbd, iter1, eps, norm_2))
+# print("\n")
 
-print("__________'NORM_2'__________")
-print("b before calling ISTA = ", b)
-print(Ista(beta, alpha, x_0, b, lbd, iter1, eps, norm_2))
-print("\n")
+# print("__________'NORM_2'__________")
+# print("b before calling ISTA = ", b)
+# print(Ista(beta, alpha, x_0, b, lbd, iter1, eps, norm_2))
+# print("\n")
 
+# x_ista = Ista(beta, alpha, x_0, b, lbd, iter1, eps, norm_2)
+# plt.plot(T, x_0,'go')
+# plt.plot(T, b,'ro')
+# plt.plot(T, x_ista, 'bo')
+# plt.grid()
+# plt.legend(['signal original','signal bruite','ISTA'])
+# plt.show()
+
+#Testing FISTA algorithm with both norm 1 and norm 2
 print('==========Fista RESULTS==========')
 print("__________'NORM_1'__________")
+
+x_fista = Fista(beta, alpha, x_0, b, lbd, lf, iter2, eps, norm_2)
 print(Fista(beta, alpha, x_0, b, lbd, lf, iter2, eps, norm_2))
 print("\n")
 
@@ -178,22 +211,28 @@ print("___________NORM_2'__________")
 print(Fista(beta, alpha, x_0, b, lbd, lf, iter2, eps, norm_2))
 print("\n")
 
-print("__________'FISTA RESULTS BIS'__________")
-print(fista(A, b, 1, 10))
-print("\n")
+plt.plot(T, x_0,'go')
+plt.plot(T, b,'ro')
+plt.plot(T, x_fista, 'bo')
+plt.grid()
+plt.legend(['signal original','signal bruite','FISTA'])
+plt.show()
 
-<<<<<<< HEAD
-# x_ista = Ista(beta, alpha, x_0, b, lbd, iter1, eps, norm_2)[0]
-# arr_1 = np.linspace(-1, 1, 10)
-# y_ista = Ista(beta, alpha, x_0, b, lbd, iter1, eps, norm_2)[1]
-# plt.legend(['x_ista','y_ista'])
+#Testing FISTA algorithm with both norm 1 and norm 2
+# print("__________'FISTA RESULTS BIS'__________")
+# x_fista = fista(A,b,1,10)
+# print(fista(A, b, 1, 10))
+# print("\n")
+# plt.plot(T, x_0,'go')
+# plt.plot(T, b,'ro')
+# plt.plot(T, x_ista, 'bo')
+# plt.grid()
+# plt.legend(['signal original','signal bruite','FISTA'])
 # plt.show()
-=======
-fista_bis = fista(A, b, 1, 10)
 
-from pylab import *
->>>>>>> 3d33902b0013718429de168f489b17402e64289d
 
-plot(b)
-plot(fista_bis)
-show()
+
+
+
+
+
